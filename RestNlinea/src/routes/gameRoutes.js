@@ -25,7 +25,9 @@ module.exports=function (app) {
     app.post('/config',function (req,res) {
         const  gameConfig={
             size: req.body.size,
-            nlinea: req.body.nlinea
+            nlinea: req.body.nlinea,
+            color1: req.body.color1,
+            color2:req.body.color2
         };
 
         game.setConfig(gameConfig,(err,data)=>{
