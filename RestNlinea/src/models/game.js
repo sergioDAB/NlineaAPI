@@ -5,6 +5,9 @@ let size;
 let nlinea;
 let color1;
 let color2;
+let colorGane="yellow";
+
+let partidas=[];
 
 
 /*se invoca con cada movimiento. Esta debe validar que el movimeinto sea válido y a la vez indicar donde se debe pintar la ficha.*/
@@ -26,16 +29,21 @@ gameModel.setPosc=(gameData,callback)=>{
 
     for(let i=tablero.length-1; i >= 0; i--){ // se debe buscar la fila mas abajo disponible
         if(tablero[0][columna].turno !== 2){
-            callback(null, {success: false, msg: "la casilla no esta disponible"});
+            callback(null, {
+                turno: turno,tablero:tablero});
             break;
         }else{
             if (tablero[i][columna].turno === 2) { // si esta disponible se regresa que se marque
                 tablero[i][columna].turno = turno;
                 tablero[i][columna].color = color;
 
+                console.log("recibo t: "+turno);
+                turno=jugadorAutomatico(size,turno,color);
+                console.log(" envio: "+turno);
+
                 ganadoraVertical= vertical(size,nlinea);
                 ganadoraHorizontal=horizontal(size,nlinea);
-                ganadoraDiagonal=diagonal(size,nlinea);
+                //ganadoraDiagonal=diagonal(size,nlinea);
 
                 if(ganadoraVertical.win==="true"){
                     resaltarColumnaGanadora(ganadoraVertical.filas, ganadoraVertical.columna);
@@ -43,10 +51,10 @@ gameModel.setPosc=(gameData,callback)=>{
                 if(ganadoraHorizontal.win==="true"){
                     resaltarFilaGanadora(ganadoraHorizontal.fila, ganadoraHorizontal.columnas);
                 }
-                if(ganadoraDiagonal.win==="true"){
+                /*if(ganadoraDiagonal.win==="true"){
                     resaltarDiagonalGanadora(ganadoraDiagonal.lista);
-                }
-                callback(null, {fila: i, columna: columna, turno: turno,tablero:tablero});
+                }*/
+                callback(null,{ turno: turno,tablero:tablero});
                 break;
             }
         }
@@ -61,6 +69,8 @@ gameModel.setConfig=(gameConfig,callback)=>{
     color1=gameConfig.color1;
     color2=gameConfig.color2;
 
+    tablero=[];
+
     for(let i=0;i < gameConfig.size; i++){
         let arreglo=[];
         for(let j=0; j < gameConfig.size;j++){
@@ -72,6 +82,43 @@ gameModel.setConfig=(gameConfig,callback)=>{
         callback(null,{success:false, msg:"numero de fichas en linea superior al tamaño del tablero"});
     }else{
         callback(null,{success:true, tablero: tablero}); // este no debe regresar nada, solo un succes true
+    }
+};
+
+
+//-------------------recibe los parametros de una partida
+
+gameModel.nuevaPartida=(gameConfig,callback)=>{
+
+    let tam=gameConfig.size;
+    let nl=gameConfig.nlinea;
+    let cat=gameConfig.categoria;
+    let cre=gameConfig.creador;
+
+    let partida={"size": tam, "nlinea": nl, "categoria": cat, "creador": cre};
+
+    partidas.push(partida);
+    callback(null, {success:true, partidas: partidas});
+
+};
+
+//--------------------------------------------------- jugador automatico
+
+
+jugadorAutomatico=function(n, turno,color){
+
+    let t = turno === 0? 1: 0; // para cambiar el turno
+    let c = color===color1? color2: color1;
+
+    for(let i=n-1; i>=0; i--){
+        for(let j=n-1; j>=0;j--){
+            if(tablero[i][j].turno===2){
+                tablero[i][j].color= c;
+                tablero[i][j].turno= t;
+                return t;
+            }
+        }
+
     }
 };
 
@@ -111,7 +158,7 @@ combinacionGanadoraVertical=function(lista, columna){ // valida que la combinaci
 resaltarColumnaGanadora=function(filas, columna){
 
     for(let i=0; i<filas.length; i++){ // crea una estructura de pares [[f,c],[f,c],[f,c],[]...]
-        tablero[filas[i]][columna].color="pink";
+        tablero[filas[i]][columna].color=colorGane;
     }
 
 };
@@ -152,11 +199,12 @@ combinacionGanadoraHorizontal=function(fila, lista){ // valida que la combinacio
 resaltarFilaGanadora=function(fila, columnas){
 
     for(let j=0; j<columnas.length; j++){
-        tablero[fila][columnas[j]].color="pink";
+        tablero[fila][columnas[j]].color=colorGane;
     }
 };
 
 
+/*
 //diagonales----------------------------------------------------------------------------------------------------
 
 diagonal=function(size,n){
@@ -169,11 +217,6 @@ diagonal=function(size,n){
         }
     }
 
-    for(let i=0; i< lista.length; i++){
-        if(lista[i]=== 3){
-            console.log(lista[i])
-        }
-    }
 
     for(let i=0;i<lista.length;i++){
         if(lista[i].length===size){
@@ -189,16 +232,18 @@ diagonal=function(size,n){
 
 diagonalGanadora=function(mat){ // recibe una diagonal [[f,c],[f,c],[f,c]....]
     for(let i=0; i<mat.length; i++){
-        if((tablero[mat[[i][0]]][mat[i][1]].turno !== tablero[mat[[0][0]]][mat[0][1]].turno)||(tablero[mat[[i][0]]][mat[i][1]].turno)===2){
+        if((tablero[mat[i][0]][mat[i][1]].turno !== tablero[mat[0][0]][mat[0][1]].turno)||(tablero[mat[i][0]][mat[i][1]].turno)===2){
             return false;
         }
     }
+    console.log("alguien gano");
     return true;
 };
 
 resaltarDiagonalGanadora=function(lista){
+    console.log("alguien gano");
     for(let i=0; i < lista.length; i++){ // crea una estructura de pares [[f,c],[f,c],[f,c],[]...]
-        tablero[lista[i][0]][lista[i][1]].color="pink";
+        tablero[lista[i][0]][lista[i][1]].color=colorGane;
     }
 };
 
@@ -233,5 +278,7 @@ desarrollar2=function(f,c,s,n){
 
 };
 
+
+*/
 
 module.exports=gameModel;

@@ -42,4 +42,26 @@ module.exports=function (app) {
             }
         })
     });
+
+    app.post('/nueva',function (req,res) {
+        const  gameConfig={
+            size: req.body.size,
+            nlinea: req.body.nlinea,
+            categoria: req.body.categoria,
+            creador: req.body.creador
+        };
+
+        game.nuevaPartida(gameConfig,(err,data)=>{
+            if(data){
+                res.json(data)
+
+            }else{
+                res.status(500).json({
+                    success:false,
+                    msg: 'Error'
+                })
+            }
+        })
+    });
+
 };

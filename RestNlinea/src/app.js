@@ -1,7 +1,16 @@
 const express=require('express');
 const app=express();
 
+/*
+var server = require('http').Server(app);
+var io = require(socket.io)(serve);
 
+
+io.connect('connection',function (socket) {
+    console.log("conexion con el scket");
+});
+
+*/
 const morgan=require('morgan');
 const bodyParser=require('body-parser');
 
