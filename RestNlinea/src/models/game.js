@@ -1,4 +1,5 @@
 
+
 let gameModel={};
 let tablero=[];
 let size;
@@ -9,9 +10,21 @@ let colorGane="yellow";
 
 let partidas=[];
 
+let view= 'parametros';
+
+// retorna la vista del juego
+
+gameModel.setView=(gameData,callback)=>{
+  let usuario= gameData.usuario;
+  if(usuario=== 'sergio'){
+      callback(null,{ view: view});
+  }else{
+      callback(null,{view:view})
+  }
+};
+
 
 /*se invoca con cada movimiento. Esta debe validar que el movimeinto sea válido y a la vez indicar donde se debe pintar la ficha.*/
-
 gameModel.setPosc=(gameData,callback)=>{
     let fila= gameData.fila;
     let columna= gameData.columna;
@@ -64,6 +77,7 @@ gameModel.setPosc=(gameData,callback)=>{
 /* funcion que se invoca al iniciar una partida. Permite conocer la configuracion del tablero para trabajar logicamente*/
 
 gameModel.setConfig=(gameConfig,callback)=>{
+    view= 'tablero';
     size=gameConfig.size;
     nlinea=gameConfig.nlinea;
     color1=gameConfig.color1;
