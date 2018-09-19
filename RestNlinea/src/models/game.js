@@ -1,38 +1,29 @@
-
+//require('./../sockets/connection');
 
 let gameModel={};
-let tablero=[];
-let size;
-let nlinea;
-let color1;
-let color2;
+
 let colorGane="yellow";
 
 let partidas=[];
-
-let view= 'parametros';
-
-// retorna la vista del juego
-
-gameModel.setView=(gameData,callback)=>{
-  let usuario= gameData.usuario;
-  if(usuario=== 'sergio'){
-      callback(null,{ view: view});
-  }else{
-      callback(null,{view:view})
-  }
-};
 
 
 /*se invoca con cada movimiento. Esta debe validar que el movimeinto sea válido y a la vez indicar donde se debe pintar la ficha.*/
 gameModel.setPosc=(gameData,callback)=>{
     let fila= gameData.fila;
     let columna= gameData.columna;
+    let tablero=gameData.tablero;
     let turno=gameData.turno;
+    let color1=gameData.color1;
+    let color2=gameData.color2;
+    let nlinea=gameData.nlinea;
+
+    let size=tablero.length;
+
 
     let ganadoraVertical;
     let ganadoraHorizontal;
     let ganadoraDiagonal;
+
 
     if((turno !== 0)&&(turno !==1)){ // solo le da un turno incial
         turno=0;
@@ -42,61 +33,92 @@ gameModel.setPosc=(gameData,callback)=>{
 
     for(let i=tablero.length-1; i >= 0; i--){ // se debe buscar la fila mas abajo disponible
         if(tablero[0][columna].turno !== 2){
-            callback(null, {
-                turno: turno,tablero:tablero});
+            callback(null, {turno: turno,tablero:tablero,color1:color1, color2:color2,nlinea:nlinea}); // regresa el tablero tal cual
             break;
         }else{
             if (tablero[i][columna].turno === 2) { // si esta disponible se regresa que se marque
                 tablero[i][columna].turno = turno;
                 tablero[i][columna].color = color;
 
-                console.log("recibo t: "+turno);
-                turno=jugadorAutomatico(size,turno,color);
-                console.log(" envio: "+turno);
 
-                ganadoraVertical= vertical(size,nlinea);
-                ganadoraHorizontal=horizontal(size,nlinea);
+                ganadoraVertical= vertical(size,nlinea,tablero);
+                ganadoraHorizontal=horizontal(size,nlinea,tablero);
                 //ganadoraDiagonal=diagonal(size,nlinea);
 
                 if(ganadoraVertical.win==="true"){
-                    resaltarColumnaGanadora(ganadoraVertical.filas, ganadoraVertical.columna);
+                    tablero=resaltarColumnaGanadora(ganadoraVertical.filas, ganadoraVertical.columna,ganadoraVertical.tablero);
                 }
                 if(ganadoraHorizontal.win==="true"){
-                    resaltarFilaGanadora(ganadoraHorizontal.fila, ganadoraHorizontal.columnas);
+                    tablero=resaltarFilaGanadora(ganadoraHorizontal.fila, ganadoraHorizontal.columnas,ganadoraHorizontal.tablero);
                 }
                 /*if(ganadoraDiagonal.win==="true"){
                     resaltarDiagonalGanadora(ganadoraDiagonal.lista);
                 }*/
-                callback(null,{ turno: turno,tablero:tablero});
+
+                callback(null,{ turno: turno,tablero:tablero,color1:color1,color2:color2,nlinea:nlinea});
                 break;
             }
         }
     }
     //vertical(size,nlinea);
 };
+//--------------------------------------------------- jugador automatico
+jugadorAutomatico=function(tabl, turno,color){
+    let n=tabl.length;
+    let tab=tabl;
+
+    for(let i=n-1; i>=0; i--){
+        for(let j=n-1; j>=0;j--){
+            if(tab[i][j].turno===2){
+                tab[i][j].color= color;
+                tab[i][j].turno= 1;
+                return tab;
+            }
+        }
+    }
+};
+
+gameModel.automatico=(gameData,callback)=>{
+    let tab=gameData.tablero;
+    let turno=gameData.turno;
+    let color1=gameData.color1;
+    let color2=gameData.color2;
+    let color=turno===0? color1: color2;
+    let nlinea=gameData.nlinea;
+
+    let tabl=jugadorAutomatico(tab,turno,color);
+    callback(null,{success:true,turno:turno, tablero: tabl, color1:color1, color2:color2 ,nlinea:nlinea});
+
+
+};
+
+
+
 /* funcion que se invoca al iniciar una partida. Permite conocer la configuracion del tablero para trabajar logicamente*/
 
 gameModel.setConfig=(gameConfig,callback)=>{
-    view= 'tablero';
-    size=gameConfig.size;
-    nlinea=gameConfig.nlinea;
-    color1=gameConfig.color1;
-    color2=gameConfig.color2;
+    let size=gameConfig.size;
+    let nlinea=gameConfig.nlinea;
+    let color1=gameConfig.color1;
+    let color2=gameConfig.color2;
 
-    tablero=[];
+    let tablero=[];
 
-    for(let i=0;i < gameConfig.size; i++){
+    if(nlinea > size){
+        nlinea=size;
+    }
+
+    console.log("size  "+size + "   nilinea "+nlinea);
+    for(let i=0;i < size; i++){
         let arreglo=[];
-        for(let j=0; j < gameConfig.size;j++){
+        for(let j=0; j < size;j++){
             arreglo.push({fila:i,columna: j, turno: 2, color: "black"});
         }
         tablero.push(arreglo);
     }
-    if(gameConfig.size < gameConfig.nlinea){
-        callback(null,{success:false, msg:"numero de fichas en linea superior al tamaño del tablero"});
-    }else{
-        callback(null,{success:true, tablero: tablero}); // este no debe regresar nada, solo un succes true
-    }
+
+    callback(null,{success:true, tablero: tablero, color1:color1, color2:color2,nlinea:nlinea});
+
 };
 
 
@@ -116,29 +138,15 @@ gameModel.nuevaPartida=(gameConfig,callback)=>{
 
 };
 
-//--------------------------------------------------- jugador automatico
-
-
-jugadorAutomatico=function(n, turno,color){
-
-    let t = turno === 0? 1: 0; // para cambiar el turno
-    let c = color===color1? color2: color1;
-
-    for(let i=n-1; i>=0; i--){
-        for(let j=n-1; j>=0;j--){
-            if(tablero[i][j].turno===2){
-                tablero[i][j].color= c;
-                tablero[i][j].turno= t;
-                return t;
-            }
-        }
-
-    }
+gameModel.setPartida=(data,callback)=>{
+    callback(null, {success:true, partidas: partidas});
 };
+
+
 
 // funciones para encontrar funciones ganadoras verticales-------------------------------------
 
-vertical=function(size,n){ // saca las combinaciones verticales
+vertical=function(size,n,tablero){ // saca las combinaciones verticales
 
     let lista=[];  // contiene sublistas de n elementos que forman una posible linea ganadora
     for(j=0; j<= size-n ; j++){
@@ -151,8 +159,8 @@ vertical=function(size,n){ // saca las combinaciones verticales
 
     for(let columna=0; columna< size; columna++){
         for(let i=0; i < lista.length; i++){ // por cada elemento de la lista verifico que sea una jugada ganadora
-            if(combinacionGanadoraVertical(lista[i],columna)=== true){
-                return {win: "true", filas: lista[i], columna: columna };
+            if(combinacionGanadoraVertical(lista[i],columna,tablero)=== true){
+                return {win: "true", filas: lista[i], columna: columna, tablero: tablero };
             }
         }
     }
@@ -160,7 +168,7 @@ vertical=function(size,n){ // saca las combinaciones verticales
 
 };
 
-combinacionGanadoraVertical=function(lista, columna){ // valida que la combinacion sea ganadora
+combinacionGanadoraVertical=function(lista, columna,tablero){ // valida que la combinacion sea ganadora
     for (let i=0; i<lista.length;i++){
         if((tablero[lista[i]][columna].turno !== tablero[lista[0]][columna].turno)|| (tablero[lista[i]][columna].turno === 2)){
             return false;
@@ -169,17 +177,17 @@ combinacionGanadoraVertical=function(lista, columna){ // valida que la combinaci
     return true;
 };
 
-resaltarColumnaGanadora=function(filas, columna){
+resaltarColumnaGanadora=function(filas, columna,tablero){
 
     for(let i=0; i<filas.length; i++){ // crea una estructura de pares [[f,c],[f,c],[f,c],[]...]
         tablero[filas[i]][columna].color=colorGane;
     }
-
+    return tablero;
 };
 
 // funciones para encotrar las jugadas ganadoras horizontales---------------------------------------------------
 
-horizontal=function(size,n){
+horizontal=function(size,n,tablero){
 
     let lista=[];  // contiene sublistas de n elementos correspondientes a los
     for(j=0; j<= size-n ; j++){
@@ -192,8 +200,8 @@ horizontal=function(size,n){
 
     for(let fila=0; fila< size; fila++){
         for(let j=0; j < lista.length; j++){ // por cada elemento de la lista verifico que sea una jugada ganadora
-            if(combinacionGanadoraHorizontal(fila,lista[j])=== true){
-                return {win: "true", fila: fila, columnas: lista[j] };
+            if(combinacionGanadoraHorizontal(fila,lista[j],tablero)=== true){
+                return {win: "true", fila: fila, columnas: lista[j] ,tablero:tablero};
             }
         }
     }
@@ -201,7 +209,7 @@ horizontal=function(size,n){
 
 };
 
-combinacionGanadoraHorizontal=function(fila, lista){ // valida que la combinacion sea ganadora
+combinacionGanadoraHorizontal=function(fila, lista,tablero){ // valida que la combinacion sea ganadora
     for (let i=0; i<lista.length;i++){
         if((tablero[fila][lista[i]].turno !== tablero[fila][lista[0]].turno)|| (tablero[fila][lista[i]].turno === 2)){
             return false;
@@ -210,11 +218,12 @@ combinacionGanadoraHorizontal=function(fila, lista){ // valida que la combinacio
     return true;
 };
 
-resaltarFilaGanadora=function(fila, columnas){
+resaltarFilaGanadora=function(fila, columnas,tablero){
 
     for(let j=0; j<columnas.length; j++){
         tablero[fila][columnas[j]].color=colorGane;
     }
+    return tablero;
 };
 
 

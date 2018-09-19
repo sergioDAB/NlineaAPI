@@ -20,4 +20,5 @@ app.listen(app.get('port'),()=>{
 
 require('./routes/userRoute')(app);
 require('./routes/gameRoutes')(app);
+require('./sockets/connection');
 
